@@ -7,7 +7,7 @@ const tokens = (n)=> {
 
 describe("Token", ()=> {
 	// Tests go here
-	let token, accounts, deployer
+	let token, accounts, deployer, receiver
 
 	// Avoid duplicates
 	beforeEach(async ()=> {
@@ -17,6 +17,7 @@ describe("Token", ()=> {
 		token = await Token.deploy("Dapp University", "DAPP", '1000000')
 		accounts = await ethers.getSigners()
 		deployer = accounts[0]
+		receiver = accounts[1]
 	})
 
 	describe("Deployment", ()=> {
@@ -56,7 +57,38 @@ describe("Token", ()=> {
 	})
 
 	// Describe Spending...
+    describe("Sending Tokens", async ()=> {
+    	let amount, transaction, result
 
+    	beforeEach(async ()=> {
+    		amount = tokens('100')
+    		// Connect
+    		// Transfer token
+    		transaction = await token.connect(deployer).transfer(
+    			receiver.address, 
+    			amount)
+    		result = await transaction.wait()
+
+    	})
+
+    	it("Transfers token balance", async ()=> {
+    		// Ensure that tokens were transfered (balance changed)
+    		expect(await token.balanceOf(deployer.address)).to.equal(tokens(999900))
+    		expect(await token.balanceOf(receiver.address)).to.equal(amount)
+    	})
+
+    	it("Emits a Transfer event", async()=> {
+    		// dig into result
+    		const eventLog = result.events[0]
+    		expect(eventLog.event).to.equal("Transfer")
+
+    		const args = eventLog.args
+    		//console.log(args._to)
+    		expect(args._to).to.equal(receiver.address)
+    		expect(args._value).to.equal(amount)
+    		//console.log(event)
+    	})
+    })
 	// Describe approving...
 
 	// Describe ...
