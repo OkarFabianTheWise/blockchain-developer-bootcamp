@@ -37,11 +37,15 @@ contract Token {
 	public 
 	returns (bool success) 
 	{
+		// Require caller has enough tokens to send
+		require(balanceOf[msg.sender] >= _value, "Insufficient Amount");
+		require(_to != address(0));
 		// Deduct tokens from sender
 		balanceOf[msg.sender] = balanceOf[msg.sender] - _value;
 		// Credit tokens to receiver
 		balanceOf[_to] = balanceOf[_to] + _value;
 		// Emit Event
         emit Transfer(msg.sender, _to, _value);
+        return true;
 	}
 }

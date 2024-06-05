@@ -60,34 +60,53 @@ describe("Token", ()=> {
     describe("Sending Tokens", async ()=> {
     	let amount, transaction, result
 
-    	beforeEach(async ()=> {
-    		amount = tokens('100')
-    		// Connect
-    		// Transfer token
-    		transaction = await token.connect(deployer).transfer(
-    			receiver.address, 
-    			amount)
-    		result = await transaction.wait()
+    	describe("Success", ()=> {
+    		beforeEach(async ()=> {
+	    		amount = tokens('100')
+	    		// Connect
+	    		// Transfer token
+	    		transaction = await token.connect(deployer).transfer(
+	    			receiver.address, 
+	    			amount)
+	    		result = await transaction.wait()
 
+	    	})
+
+	    	it("transfers token balance", async ()=> {
+	    		// Ensure that tokens were transfered (balance changed)
+	    		expect(await token.balanceOf(deployer.address)).to.equal(tokens(999900))
+	    		expect(await token.balanceOf(receiver.address)).to.equal(amount)
+	    	})
+
+	    	it("emits a Transfer event", async()=> {
+	    		// dig into result
+	    		const eventLog = result.events[0]
+	    		expect(eventLog.event).to.equal("Transfer")
+
+	    		const args = eventLog.args
+	    		//console.log(args._to)
+	    		expect(args._to).to.equal(receiver.address)
+	    		expect(args._value).to.equal(amount)
+	    		//console.log(event)
+    		})
     	})
 
-    	it("Transfers token balance", async ()=> {
-    		// Ensure that tokens were transfered (balance changed)
-    		expect(await token.balanceOf(deployer.address)).to.equal(tokens(999900))
-    		expect(await token.balanceOf(receiver.address)).to.equal(amount)
+    	describe("Failure", ()=> {
+    		it("rejects insufficient balances", async ()=> {
+    			// Transfer more tokens than dedployer has
+    			const invalidAmount = tokens(10000000)
+    			await expect(token.connect(
+    				deployer
+    				).transfer(
+    				receiver.address, 
+    				invalidAmount)).to.be.reverted
+    		})
+
+    		it("rejects invalid recipient", async ()=> {
+    			await expect(token.connect(deployer).transfer("0x0000000000000000000000000000000000000000", amount)).to.be.reverted
+    		})
     	})
 
-    	it("Emits a Transfer event", async()=> {
-    		// dig into result
-    		const eventLog = result.events[0]
-    		expect(eventLog.event).to.equal("Transfer")
-
-    		const args = eventLog.args
-    		//console.log(args._to)
-    		expect(args._to).to.equal(receiver.address)
-    		expect(args._value).to.equal(amount)
-    		//console.log(event)
-    	})
     })
 	// Describe approving...
 
