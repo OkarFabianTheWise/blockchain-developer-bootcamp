@@ -7,7 +7,7 @@ const tokens = (n)=> {
 
 describe("Token", ()=> {
 	// Tests go here
-	let token, accounts, deployer, receiver
+	let token, accounts, deployer, receiver, exchange
 
 	// Avoid duplicates
 	beforeEach(async ()=> {
@@ -18,6 +18,7 @@ describe("Token", ()=> {
 		accounts = await ethers.getSigners()
 		deployer = accounts[0]
 		receiver = accounts[1]
+		exchange = accounts[2]
 	})
 
 	describe("Deployment", ()=> {
@@ -108,7 +109,47 @@ describe("Token", ()=> {
     	})
 
     })
+
 	// Describe approving...
+    describe("Approving Tokens", ()=> {
+    	let amount, transaction, result
+
+    	beforeEach(async ()=> {
+    		amount = tokens(100)
+    		transaction = await token.connect(deployer).approve(
+    			exchange.address, 
+    			amount)
+    		result = await transaction.wait()
+    	})
+
+    	describe("Success", async ()=> {
+            //
+            it("allocates an allowance for delegated token spender", async ()=> {
+            	expect(await token.allowance(deployer.address, 
+            		exchange.address)).to.equal(amount)
+            })
+
+            it("emits on Approval event", async()=> {
+	    		// dig into result
+	    		const eventLog = result.events[0]
+	    		expect(eventLog.event).to.equal("Approval")
+
+	    		const args = eventLog.args
+	    		//console.log(args._to)
+	    		expect(args.owner).to.equal(deployer.address)
+	    		expect(args.spender).to.equal(exchange.address)
+	    		expect(args.value).to.equal(amount)
+	    		//console.log(event)
+    		})
+    	})
+
+    	describe("Failure", async ()=> {
+    		//
+    		it("rejects invalid spenders", async ()=> {
+    			await expect(token.connect(deployer).approve("0x0000000000000000000000000000000000000000", amount)).to.be.reverted
+    		})
+    	})
+    })
 
 	// Describe ...
 

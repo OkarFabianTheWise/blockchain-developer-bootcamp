@@ -11,6 +11,8 @@ contract Token {
     
     // Track balances
     mapping(address => uint256) public balanceOf;
+    // Track allowances
+    mapping(address => mapping(address => uint256)) public allowance;
 
     // Event emitting
     event Transfer(
@@ -19,7 +21,11 @@ contract Token {
     	uint256 _value
     );
 
-    // Send Tokens
+    event Approval(
+    	address indexed owner, 
+    	address indexed spender, 
+    	uint256 value
+    );
     
 
 	constructor(string memory _name, 
@@ -47,5 +53,15 @@ contract Token {
 		// Emit Event
         emit Transfer(msg.sender, _to, _value);
         return true;
+	}
+
+	function approve(address _spender, uint256 _value) 
+	public 
+	returns(bool success) {
+		// code goes here
+		require(_spender != address(0));
+		allowance[msg.sender][_spender] = _value;
+		emit Approval(msg.sender, _spender, _value);
+		return true;
 	}
 }
