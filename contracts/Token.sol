@@ -52,7 +52,7 @@ contract Token {
 	function _transfer(address _from, 
 		address _to, 
 		uint256 _value) internal {
-		require(_to != address(0));
+		require(_to != address(0), "cannot send to address 0");
 		// Deduct tokens from sender
 		balanceOf[_from] = balanceOf[_from] - _value;
 		// Credit tokens to receiver
@@ -77,8 +77,8 @@ contract Token {
 	    public
 		returns(bool success) {
 		// check approval
-		require(_value <= balanceOf[_from]);
-		require(_value <= allowance[_from][msg.sender]);
+		require(_value <= balanceOf[_from], "Insufficient Balance");
+		require(_value <= allowance[_from][msg.sender], "Insufficient Allowance");
 		allowance[_from][msg.sender] = allowance[_from][msg.sender] - _value;
 		// Spend tokens
 		_transfer(_from, _to, _value);
