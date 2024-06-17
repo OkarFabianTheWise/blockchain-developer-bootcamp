@@ -24,6 +24,7 @@ describe("Exchange", ()=> {
 		deployer = accounts[0]
 		feeAccount = accounts[1]
 		user1 = accounts[2]
+		user2 = accounts[3]
 		
 		// deployed instance
 		exchange = await Exchange.deploy(feeAccount.address, feePercent)
@@ -183,6 +184,7 @@ describe("Exchange", ()=> {
 					tokens(5))
 				result = await transaction.wait()
 			})
+
 			
 			it("it tracks newly created order", async()=> {
 				expect(await exchange.ordersCount()).to.equal(1)
@@ -217,6 +219,80 @@ describe("Exchange", ()=> {
 			})
 
 		})
+	})
+
+	describe("Order actions", async ()=> {
+		let transaction, result
+        let amount = tokens(10)
+
+		beforeEach(async ()=> {
+			transaction = await token1.connect(deployer).transfer(user1.address, amount)
+			result = await transaction.wait()
+
+			transaction = await token1.connect(
+				user1
+				).approve(
+				exchange.address, 
+				amount)
+			result = await transaction.wait()
+
+			transaction = await exchange.connect(
+				user1
+				).depositToken(
+				token1.address, 
+				amount)
+			result = await transaction.wait()
+
+			transaction = await exchange.connect(
+				user1
+				).makeOrder(
+				token2.address, 
+				tokens(5), 
+				token1.address, 
+				tokens(5))
+			result = await transaction.wait()
+		})
+		// Cancel Test
+		describe("Cancelling orders", async ()=> {
+		    beforeEach(async ()=> {
+		    	transaction = await exchange.connect(user1).cancelOrder(1)
+		    	result = await transaction.wait()
+		    })
+
+		    describe("Success", async ()=> {
+				//
+				it("updates cancel Orders", async ()=> {
+			    	expect(await exchange.orderCancelled(1)).to.equal(true)
+			    })
+
+			    it("emits a Cancel event", async()=> {
+		    		// dig into result
+		    		const eventLog = result.events[0]
+		    		expect(eventLog.event).to.equal("Cancel")
+
+		    		const args = eventLog.args
+		    		expect(args.id).to.equal(1)
+		    		expect(args.user).to.equal(user1.address)
+		    		expect(args.tokenGet).to.equal(token2.address)
+		    		expect(args.amountGet).to.equal(tokens(5))
+		    		expect(args.tokenGive).to.equal(token1.address)
+		    		expect(args.amountGive).to.equal(tokens(5))
+		    		expect(args.timestamp).to.at.least(1)
+	    		})
+			})
+
+			describe("Failure", async ()=> {
+				//
+				it("rejects invalid id", async ()=> {
+					await expect(exchange.connect(user1).cancelOrder(999)).to.be.reverted
+				})
+				it("rejects unauthorized cancellation", async ()=> {
+					await expect(exchange.connect(user2).cancelOrder(999)).to.be.reverted
+				})
+			})
+
+	    })
+
 	})
 
 })
